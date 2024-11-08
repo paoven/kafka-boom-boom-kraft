@@ -85,7 +85,7 @@ Network setup:
 
 We simulate a DC network split between kraft controllers of DC-A and DC-B but they can still see kraft-3
 
-The goal was to observe that quorum leadership does not flap between kraft-1 and 2, in fact is stabilizes to kraft-3 during the network split
+The goal is to observe that quorum leadership does not flap between kraft-1 and 2, in fact is stabilizes to kraft-3 during the network split
 
 When the network comes back the quorum is reformed, both kraft-1 and kraft-2 can become again leaders
 
