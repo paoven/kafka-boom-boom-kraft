@@ -1,0 +1,85 @@
+#!/bin/bash
+
+source ../utils/utils.sh
+docker-compose down -v
+
+CLUSTER_ID=`docker run --rm confluentinc/cp-server:7.7.1 /bin/kafka-storage random-uuid`
+echo "CLUSTER_ID=$CLUSTER_ID" > .env
+
+DIRS="kafka-1-vol/ kafka-2-vol/ kafka-3-vol/ kafka-4-vol/ kraft-1-vol/ kraft-2-vol/ kraft-3-vol/ kraft-4-vol/ kraft-5-vol/"
+
+for i in $DIRS; do
+  sudo rm -fr $i
+  mkdir $i
+# Make sure the user has read and write permissions.
+  chown -R 1000:1000 $i
+done;
+
+
+docker-compose up -d
+
+KAFKA_1_IP=$(container_to_ip kafka-1)
+KAFKA_2_IP=$(container_to_ip kafka-2)
+KAFKA_3_IP=$(container_to_ip kafka-3)
+KAFKA_4_IP=$(container_to_ip kafka-4)
+KRAFT_1_IP=$(container_to_ip kraft-1)
+KRAFT_2_IP=$(container_to_ip kraft-2)
+KRAFT_3_IP=$(container_to_ip kraft-3)
+KRAFT_4_IP=$(container_to_ip kraft-4)
+KRAFT_5_IP=$(container_to_ip kraft-5)
+interface=eth0
+
+
+main() {
+	sleep 20
+	create_topic kafka-1 test 1 4 3
+	sleep 5
+
+	get_state_kraft kraft-1 $CLUSTER_ID '1@kraft-1:29093,2@kraft-2:29093,3@kraft-3:29093,8@kraft-4:29093,9@kraft-5:29093'
+
+	send_message kafka-1 'before network outage'
+	read_messages kafka-1 1
+
+	kraft_mode kraft-1 kraft-2 kraft-3 kraft-4 kraft-5
+
+	log 'Network outage starts'
+
+	# DC-A: kafka-1, kafka-2, kraft-1 (id=1), kraft-4 (id=8)
+	# DC-B: kafka-3, kafka-4, kraft-2 (id=2), kraft-5 (id=9)
+	# DC-C: kraft-3 (id=3)
+
+        # rack A
+        block_port kraft-4 29093 $KRAFT_5_IP $KRAFT_2_IP $KRAFT_3_IP
+        # rack B
+        block_port kraft-5 29093 $KRAFT_1_IP $KRAFT_4_IP $KRAFT_3_IP
+
+	log "Let's wait for the timeouts to occur"
+	sleep 15
+
+        
+	log "We should see leader instability, getting kraft quorum info a few times to show instability"
+	kraft_mode kraft-1 kraft-2 kraft-3
+	kraft_mode kraft-1 kraft-2 kraft-3
+	kraft_mode kraft-1 kraft-2 kraft-3
+
+	log 'Network outage ends'
+	remove_partition kafka-1 kafka-2 kafka-3 kafka-4 kraft-1 kraft-2 kraft-3 kraft-4 kraft-5
+
+	log 'Waiting for the quorum to be stabilized, we should be able to get quorum info from all controllers'
+	sleep 15
+
+	kraft_mode kraft-1 kraft-2 kraft-3 kraft-4 kraft-5
+	kraft_mode kraft-1 kraft-2 kraft-3 kraft-4 kraft-5
+
+	get_state_kraft kraft-1 $CLUSTER_ID '1@kraft-1:29093,2@kraft-2:29093,3@kraft-3:29093,8@kraft-4:29093,9@kraft-5:29093'
+	get_state_kraft kraft-2 $CLUSTER_ID '1@kraft-1:29093,2@kraft-2:29093,3@kraft-3:29093,8@kraft-4:29093,9@kraft-5:29093'
+	get_state_kraft kraft-3 $CLUSTER_ID '1@kraft-1:29093,2@kraft-2:29093,3@kraft-3:29093,8@kraft-4:29093,9@kraft-5:29093'
+	get_state_kraft kraft-4 $CLUSTER_ID '1@kraft-1:29093,2@kraft-2:29093,3@kraft-3:29093,8@kraft-4:29093,9@kraft-5:29093'
+	get_state_kraft kraft-5 $CLUSTER_ID '1@kraft-1:29093,2@kraft-2:29093,3@kraft-3:29093,8@kraft-4:29093,9@kraft-5:29093'
+
+
+	send_message kafka-1 'after network outage'
+	read_messages kafka-1 2
+}
+
+main

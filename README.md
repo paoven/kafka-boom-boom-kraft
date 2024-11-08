@@ -74,3 +74,35 @@ We simulate the following connectivity loss:
 All other connections are still up.
 All partitions where Kafka-3 is the leader are unavailable.
 If we stop Kafka-3, they are still unavailable as unclean leader election is not enabled and Kafka-3 is the only broker in ISR.
+
+
+### Scenario 7 Kraft - DC network split
+
+Network setup:
+* DC-A: kafka-1, kafka-2, kraft-1
+* DC-B: kafka-3, kafka-4, kraft-2
+* DC-C kraft-3
+
+We simulate a DC network split between kraft controllers of DC-A and DC-B but they can still see kraft-3
+
+The goal was to observe that quorum leadership does not flap between kraft-1 and 2, in fact is stabilizes to kraft-3 during the network split
+
+When the network comes back the quorum is reformed, both kraft-1 and kraft-2 can become again leaders
+
+### Scenario 8 Kraft - 5 controllers - partial cross DC network split described in KIP-996
+
+Network setup:
+* DC-A: kafka-1, kafka-2, kraft-1, kraft-4 (id=8)
+* DC-B: kafka-3, kafka-4, kraft-2, kraft-5 (id=9)
+* DC-C kraft-3
+
+We simulate a particular case of DC network split between some of the kraft controllers of DC-A and DC-B as reported in [KIP-996]
+(https://cwiki.apache.org/confluence/display/KAFKA/KIP-996:+Pre-Vote) 
+
+![enter image description here](https://decentralizedthoughts.github.io/uploads/RAFT%201.jpg)
+
+During the network outage, we can observe that the quorum keeps flapping between the connected nodes (1,2,3 with reference to the image)
+
+When the network comes back the quorum is reformed and stable
+
+KIP-996 should avoid instability, created this failure scenario to simplify testing once it will be available

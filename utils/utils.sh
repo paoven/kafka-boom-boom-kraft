@@ -33,7 +33,6 @@ container_to_ip() {
     name=$(container_to_name $container)
     echo $(docker exec $name hostname -I)
 }
-
 block_host() {
     container=$1
     name=$(container_to_name $container)
@@ -135,6 +134,17 @@ get_state() {
     docker exec -t $name zookeeper-shell localhost:2181 get /brokers/topics/test/partitions/0/state | grep '{' | grep '}'
 }
 
+get_state_kraft() {
+    container=$1
+    shift 1
+    cluster_id=$1
+    shift 1
+    quorum=$1
+    name=$(container_to_name $container)
+    log "State for partition from $container for cluster $cluster_id quorum $quorum"
+    docker exec -t $name kafka-metadata-shell  --controllers $quorum --cluster-id $cluster_id cat image/topics/byName/test/0/
+}
+
 zookeeper_mode() {
     for container in $@; do
         name=$(container_to_name $container)
@@ -145,6 +155,14 @@ zookeeper_mode() {
         else
             log "$container has no mode"
         fi
+    done
+}
+
+kraft_mode(){
+    for container in $@; do
+        name="$(container_to_name $container)"
+        mode=$(docker exec -t $name bash -c "kafka-metadata-quorum --bootstrap-controller $name:29093 describe --status")
+        log "$container $mode"
     done
 }
 
@@ -160,8 +178,8 @@ create_topic() {
     shift 1
     min=$1
 
-    log "Creating topic with partitions=$partitions, replication factor=$repl and min.isr=$min"
-    log `docker exec -t $name kafka-topics --zookeeper localhost:2181 --create --topic $topic --replication-factor $repl --config min.insync.replicas=$min --partitions $partitions`
+    log "Creating topic with partitions=$partitions, replication factor=$repl min.isr=$min"
+    log `docker exec -t $name kafka-topics --bootstrap-server localhost:9092 --create --topic $topic --replication-factor $repl --config min.insync.replicas=$min --partitions $partitions`
 }
 
 describe_topic() {
@@ -170,5 +188,6 @@ describe_topic() {
     shift 1
     topic=$1
 
-    log `docker exec -t $name kafka-topics --zookeeper localhost:2181 --describe --topic $topic`
+    log `docker exec -t $name kafka-topics --bootstrap-server localhost:9092 -describe --topic $topic`
+
 }

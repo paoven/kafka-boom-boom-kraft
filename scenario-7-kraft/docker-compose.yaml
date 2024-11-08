@@ -1,0 +1,219 @@
+version: "3"
+services:
+  kraft-1:
+    build:
+      context: ../
+      dockerfile: Dockerfile.kafka
+    hostname: kraft-1
+    ports:
+      - "9101:9101"
+    volumes:
+      - ./kraft-1-vol:/tmp/kraft-combined-logs
+    environment:
+      KAFKA_NODE_ID: 1
+      CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: kafka-1:9092
+      KAFKA_METRIC_REPORTERS: ''
+      CONFLUENT_METRICS_ENABLE: 'false'
+      CONFLUENT_REPORTERS_TELEMETRY_AUTO_ENABLE: 'false'
+      KAFKA_JMX_PORT: 9101
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_PROCESS_ROLES: 'controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kraft-1:29093,2@kraft-2:29093,3@kraft-3:29093'
+      KAFKA_LISTENERS: 'CONTROLLER://kraft-1:29093'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+      CLUSTER_ID: ${CLUSTER_ID}  
+      KAFKA_LOG4J_ROOT_LOGLEVEL: 'INFO'
+      KAFKA_LOG4J_LOGGERS: 'kafka=INFO,org.apache.kafka.raft=DEBUG,kafka.raft=DEBUG,kafka.controller=WARN,kafka.log.LogCleaner=WARN,state.change.logger=WARN,kafka.producer.async.DefaultEventHandler=WARN'
+
+  kraft-2:
+    build:
+      context: ../
+      dockerfile: Dockerfile.kafka
+    hostname: kraft-2
+    ports:
+      - "9102:9102"
+    volumes:
+      - ./kraft-2-vol:/tmp/kraft-combined-logs
+    environment:
+      KAFKA_NODE_ID: 2
+      CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: kafka-1:9092
+      CONFLUENT_METRICS_ENABLE: 'false'
+      KAFKA_METRIC_REPORTERS: ''
+      CONFLUENT_REPORTERS_TELEMETRY_AUTO_ENABLE: 'false'
+      KAFKA_JMX_PORT: 9102
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_PROCESS_ROLES: 'controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kraft-1:29093,2@kraft-2:29093,3@kraft-3:29093'
+      KAFKA_LISTENERS: 'CONTROLLER://kraft-2:29093'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+      CLUSTER_ID: ${CLUSTER_ID}  
+      KAFKA_LOG4J_ROOT_LOGLEVEL: 'INFO'
+      KAFKA_LOG4J_LOGGERS: 'kafka=INFO,org.apache.kafka.raft=DEBUG,kafka.raft=DEBUG,kafka.controller=WARN,kafka.log.LogCleaner=WARN,state.change.logger=WARN,kafka.producer.async.DefaultEventHandler=WARN'
+
+  kraft-3:
+    build:
+      context: ../
+      dockerfile: Dockerfile.kafka
+    hostname: kraft-3
+    ports:
+      - "9103:9103"
+    volumes:
+      - ./kraft-3-vol:/tmp/kraft-combined-logs
+    environment:
+      KAFKA_NODE_ID: 3
+      KAFKA_JMX_PORT: 9103
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_PROCESS_ROLES: 'controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kraft-1:29093,2@kraft-2:29093,3@kraft-3:29093'
+      KAFKA_LISTENERS: 'CONTROLLER://kraft-3:29093'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+      CLUSTER_ID: ${CLUSTER_ID}  
+      CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: kafka-1:9092
+      CONFLUENT_METRICS_ENABLE: 'false'
+      KAFKA_METRIC_REPORTERS: ''
+      CONFLUENT_REPORTERS_TELEMETRY_AUTO_ENABLE: 'false'
+      KAFKA_LOG4J_ROOT_LOGLEVEL: 'INFO'
+      KAFKA_LOG4J_LOGGERS: 'kafka=INFO,org.apache.kafka.raft=DEBUG,kafka.raft=DEBUG,kafka.controller=WARN,kafka.log.LogCleaner=WARN,state.change.logger=WARN,kafka.producer.async.DefaultEventHandler=WARN'
+
+  kafka-1:
+    build:
+      context: ../
+      dockerfile: Dockerfile.kafka
+    hostname: kafka-1
+    depends_on:
+      - kraft-1
+      - kraft-2
+      - kraft-3
+    ports:
+      - "29092:29092"
+      - "9104:9104"
+    volumes:
+      - ./kafka-1-vol:/tmp/kraft-combined-logs
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka-1:9092,PLAINTEXT_HOST://localhost:29092"
+      KAFKA_BROKER_RACK: rack-a
+      KAFKA_LISTENENS: 'PLAINTEXT://kafka-1:9092,PLAINTEXT_HOST://0.0.0.0:29092'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kraft-1:29093,2@kraft-2:29093,3@kraft-3:29093'
+      KAFKA_NODE_ID: 4
+      KAFKA_JMX_PORT: 9104
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_PROCESS_ROLES: 'broker'
+      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+      CLUSTER_ID: ${CLUSTER_ID}  
+      CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: kafka-1:9092
+      CONFLUENT_METRICS_ENABLE: 'false'
+      KAFKA_METRIC_REPORTERS: ''
+      CONFLUENT_REPORTERS_TELEMETRY_AUTO_ENABLE: 'false'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_LOG4J_ROOT_LOGLEVEL: 'INFO'
+      KAFKA_LOG4J_LOGGERS: 'kafka=INFO,org.apache.kafka.raft=DEBUG,kafka.raft=DEBUG,kafka.controller=WARN,kafka.log.LogCleaner=WARN,state.change.logger=WARN,kafka.producer.async.DefaultEventHandler=WARN'
+
+  kafka-2:
+    build:
+      context: ../
+      dockerfile: Dockerfile.kafka
+    hostname: kafka-2
+    depends_on:
+      - kraft-1
+      - kraft-2
+      - kraft-3
+    ports:
+      - "29093:29093"
+      - "9105:9105"
+    volumes:
+      - ./kafka-2-vol:/tmp/kraft-combined-logs
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka-2:9092,PLAINTEXT_HOST://localhost:29093"
+      KAFKA_BROKER_RACK: rack-a
+      KAFKA_LISTENENS: 'PLAINTEXT://kafka-2:9092,PLAINTEXT_HOST://0.0.0.0:29093'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kraft-1:29093,2@kraft-2:29093,3@kraft-3:29093'
+      KAFKA_NODE_ID: 5
+      KAFKA_JMX_PORT: 9105
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_PROCESS_ROLES: 'broker'
+      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+      CLUSTER_ID: ${CLUSTER_ID}  
+      CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: kafka-1:9092
+      CONFLUENT_METRICS_ENABLE: 'false'
+      KAFKA_METRIC_REPORTERS: ''
+      CONFLUENT_REPORTERS_TELEMETRY_AUTO_ENABLE: 'false'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_LOG4J_ROOT_LOGLEVEL: 'INFO'
+      KAFKA_LOG4J_LOGGERS: 'kafka=INFO,org.apache.kafka.raft=DEBUG,kafka.raft=DEBUG,kafka.controller=WARN,kafka.log.LogCleaner=WARN,state.change.logger=WARN,kafka.producer.async.DefaultEventHandler=WARN'
+
+  kafka-3:
+    build:
+      context: ../
+      dockerfile: Dockerfile.kafka
+    hostname: kafka-3
+    depends_on:
+      - kraft-1
+      - kraft-2
+      - kraft-3
+    ports:
+      - "29094:29094"
+      - "9106:9106"
+    volumes:
+      - ./kafka-3-vol:/tmp/kraft-combined-logs
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka-3:9092,PLAINTEXT_HOST://localhost:29094"
+      KAFKA_BROKER_RACK: rack-b
+      KAFKA_LISTENENS: 'PLAINTEXT://kafka-3:9092,PLAINTEXT_HOST://0.0.0.0:29094'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kraft-1:29093,2@kraft-2:29093,3@kraft-3:29093'
+      KAFKA_NODE_ID: 6
+      KAFKA_JMX_PORT: 9106
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_PROCESS_ROLES: 'broker'
+      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+      CLUSTER_ID: ${CLUSTER_ID}  
+      CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: kafka-1:9092
+      CONFLUENT_METRICS_ENABLE: 'false'
+      KAFKA_METRIC_REPORTERS: ''
+      CONFLUENT_REPORTERS_TELEMETRY_AUTO_ENABLE: 'false'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_LOG4J_ROOT_LOGLEVEL: 'INFO'
+      KAFKA_LOG4J_LOGGERS: 'kafka=INFO,org.apache.kafka.raft=DEBUG,kafka.raft=DEBUG,kafka.controller=WARN,kafka.log.LogCleaner=WARN,state.change.logger=WARN,kafka.producer.async.DefaultEventHandler=WARN'
+
+  kafka-4:
+    build:
+      context: ../
+      dockerfile: Dockerfile.kafka
+    hostname: kafka-4
+    depends_on:
+      - kraft-1
+      - kraft-2
+      - kraft-3
+    ports:
+      - "29095:29095"
+      - "9107:9107"
+    volumes:
+      - ./kafka-4-vol:/tmp/kraft-combined-logs
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka-4:9092,PLAINTEXT_HOST://localhost:29095"
+      KAFKA_BROKER_RACK: rack-b
+      KAFKA_LISTENENS: 'PLAINTEXT://kafka-4:9092,PLAINTEXT_HOST://0.0.0.0:29095'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kraft-1:29093,2@kraft-2:29093,3@kraft-3:29093'
+      KAFKA_NODE_ID: 7
+      KAFKA_JMX_PORT: 9107
+      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_PROCESS_ROLES: 'broker'
+      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+      CLUSTER_ID: ${CLUSTER_ID}  
+      CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: kafka-1:9092
+      CONFLUENT_METRICS_ENABLE: 'false'
+      KAFKA_METRIC_REPORTERS: ''
+      CONFLUENT_REPORTERS_TELEMETRY_AUTO_ENABLE: 'false'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_LOG4J_ROOT_LOGLEVEL: 'INFO'
+      KAFKA_LOG4J_LOGGERS: 'kafka=INFO,org.apache.kafka.raft=DEBUG,kafka.raft=DEBUG,kafka.controller=WARN,kafka.log.LogCleaner=WARN,state.change.logger=WARN,kafka.producer.async.DefaultEventHandler=WARN'

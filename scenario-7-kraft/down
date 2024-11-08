@@ -1,0 +1,13 @@
+#!/bin/bash
+
+source ../utils/utils.sh
+
+docker-compose down -v
+
+DIRS="kafka-1-vol/ kafka-2-vol/ kafka-3-vol/ kafka-4-vol/ kraft-1-vol/ kraft-2-vol/ kraft-3-vol/"
+
+for i in $DIRS; do
+  sudo rm -fr $i
+done;
+
+rm .env

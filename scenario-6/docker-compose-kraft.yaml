@@ -1,0 +1,64 @@
+version: "3"
+services:
+  kraft-1:
+    build:
+      context: ../
+      dockerfile: Dockerfile.kraft
+    hostname: kraft-1
+    environment:
+
+  kraft-2:
+    build:
+      context: ../
+      dockerfile: Dockerfile.kraft
+    hostname: kraft-2
+    environment:
+
+  kraft-3:
+    build:
+      context: ../
+      dockerfile: Dockerfile.kraft
+    hostname: kraft-3
+    environment:
+
+  kafka-1:
+    build:
+      context: ../
+      dockerfile: Dockerfile.kafka
+    hostname: kafka-1
+    depends_on:
+      - kraft-1
+      - kraft-2
+      - kraft-3
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka-1:9092"
+      KAFKA_OFFSETS_TOPIC_NUM_PARTITIONS: "1"
+      KAFKA_BROKER_ID: "1"
+
+  kafka-2:
+    build:
+      context: ../
+      dockerfile: Dockerfile.kafka
+    hostname: kafka-2
+    depends_on:
+      - kraft-1
+      - kraft-2
+      - kraft-3
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka-2:9092"
+      KAFKA_OFFSETS_TOPIC_NUM_PARTITIONS: "1"
+      KAFKA_BROKER_ID: "2"
+
+  kafka-3:
+    build:
+      context: ../
+      dockerfile: Dockerfile.kafka
+    hostname: kafka-3
+    depends_on:
+      - kraft-1
+      - kraft-2
+      - kraft-3
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka-3:9092"
+      KAFKA_OFFSETS_TOPIC_NUM_PARTITIONS: "1"
+      KAFKA_BROKER_ID: "3"
